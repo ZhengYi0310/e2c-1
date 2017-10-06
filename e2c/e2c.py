@@ -1,8 +1,7 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
-
-from .losses import binary_crossentropy
+import pdb
 
 
 class NormalDistribution(object):
@@ -12,7 +11,7 @@ class NormalDistribution(object):
     Cov=A*(sigma).^2*A', where A = (I+v*r^T).
     """
 
-    def __init__(self, mu, sigma, logsigma, *, v=None, r=None):
+    def __init__(self, mu, sigma, logsigma, v=None, r=None):
         self.mu = mu
         self.sigma = sigma
         self.logsigma = logsigma
@@ -60,8 +59,8 @@ class E2C(nn.Module):
         super(E2C, self).__init__()
         enc, trans, dec = load_config(config)
         self.encoder = enc(dim_in, dim_z)
-
-        self.decoder = dec(dim_z, dim_in)
+        self.z_dim = dim_z
+        self.decoder = dec(dim_z) #dim_z, dim_in)
         self.trans = trans(dim_z, dim_u)
 
     def encode(self, x):
@@ -79,18 +78,26 @@ class E2C(nn.Module):
         self.z_sigma = std
         eps = torch.FloatTensor(std.size()).normal_()
         if std.data.is_cuda:
-            eps.cuda()
+            eps = eps.cuda()
         eps = Variable(eps)
-        return eps.mul(std).add_(mean), NormalDistribution(mean, std, torch.log(std))
+        # return eps.mul(std).add_(mean), NormalDistribution(mean, std, torch.log(std))
+        return eps.mul(std).add_(mean), NormalDistribution(mean, std, logvar.mul(0.5))
 
-    def forward(self, x, action, x_next):
+
+    def forward(self, x, action=None, x_next=None, x_t_only=False):
+        if action is None or x_next is None : assert x_t_only
+        
         mean, logvar = self.encode(x)
-        mean_next, logvar_next = self.encode(x_next)
-
         z, self.Qz = self.reparam(mean, logvar)
+        self.x_dec = self.decode(z)
+
+        if x_t_only : return
+        
+        mean_next, logvar_next = self.encode(x_next)
         z_next, self.Qz_next = self.reparam(mean_next, logvar_next)
 
-        self.x_dec = self.decode(z)
+        self.z = z
+        self.z_next = z_next
         self.x_next_dec = self.decode(z_next)
 
         self.z_next_pred, self.Qz_next_pred = self.transition(z, self.Qz, action)
@@ -111,21 +118,21 @@ class E2C(nn.Module):
 def compute_loss(x_dec, x_next_pred_dec, x, x_next,
                  Qz, Qz_next_pred,
                  Qz_next):
+    
     # Reconstruction losses
-    if False:
-        x_reconst_loss = (x_dec - x_next).pow(2).sum(dim=1)
-        x_next_reconst_loss = (x_next_pred_dec - x_next).pow(2).sum(dim=1)
-    else:
-        x_reconst_loss = -binary_crossentropy(x, x_dec).sum(dim=1)
-        x_next_reconst_loss = -binary_crossentropy(x_next, x_next_pred_dec).sum(dim=1)
+    mask = (x != 0. ).float()
+    x_reconst_loss = torch.mean(mask * (x_dec - x) ** 2)
+    mask = (x_next != 0 ).float()
+    x_next_reconst_loss = torch.mean(mask * (x_next_pred_dec - x_next) ** 2)
 
     logvar = Qz.logsigma.mul(2)
     KLD_element = Qz.mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
     KLD = torch.sum(KLD_element, dim=1).mul(-0.5)
 
     # ELBO
-    bound_loss = x_reconst_loss.add(x_next_reconst_loss).add(KLD)
+    # bound_loss = x_reconst_loss.add(x_next_reconst_loss)#.add(KLD)
     kl = KLDGaussian(Qz_next_pred, Qz_next)
-    return bound_loss.mean(), kl.mean()
+    # return bound_loss.mean(), KLD.mean(), kl.mean()
+    return x_reconst_loss.mean(), x_next_reconst_loss.mean(), KLD_element, KLD, kl
 
-from .configs import load_config
+from configs import load_config

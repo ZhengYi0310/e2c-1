@@ -6,7 +6,7 @@ set of configuration.
 import torch
 from torch import nn
 from torch.autograd import Variable
-
+import pdb
 
 class Encoder(nn.Module):
     def __init__(self, enc, dim_in, dim_out):
@@ -47,7 +47,7 @@ class Transition(nn.Module):
         rT = r.unsqueeze(1)
         I = Variable(torch.eye(self.dim_z).repeat(batch_size, 1, 1))
         if rT.data.is_cuda:
-            I.dada.cuda()
+            I = I.cuda() # I.data.cuda()
         A = I.add(v1.bmm(rT))
 
         B = self.fc_B(h).view(-1, self.dim_z, self.dim_u)
@@ -128,7 +128,7 @@ class PendulumEncoder(Encoder):
             x = l(x)
         return x.chunk(2, dim=1)
 
-
+        
 class PendulumDecoder(Decoder):
     def __init__(self, dim_in, dim_out):
         m = nn.ModuleList([
@@ -165,9 +165,78 @@ class PendulumTransition(Transition):
         super(PendulumTransition, self).__init__(trans, dim_z, dim_u)
 
 
+class LidarEncoder(nn.Module):
+    def __init__(self, dim_in, dim_out, ndf=64, nc=1, nz=1024, lf=(3,32)):
+        super(LidarEncoder, self).__init__()
+        self.dim_out = dim_out
+        self.nz = nz
+
+        self.main = nn.Sequential(
+                # input is (nc) x 64 x 64
+                nn.Conv2d(nc, ndf, 4, 2, 1, bias=False),
+                nn.LeakyReLU(0.2, inplace=True),
+                # state size. (ndf) x 32 x 32
+                nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+                nn.BatchNorm2d(ndf * 2),
+                nn.LeakyReLU(0.2, inplace=True),
+                # state size. (ndf*2) x 16 x 16
+                nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+                nn.BatchNorm2d(ndf * 4),
+                nn.LeakyReLU(0.2, inplace=True),
+                # state size. (ndf*4) x 8 x 8
+                nn.Conv2d(ndf * 4, ndf * 8, (3,4), 2, (0,1), bias=False),
+                nn.BatchNorm2d(ndf * 8),
+                nn.LeakyReLU(0.2, inplace=True),
+                # state size. (ndf*8) x 4 x 4
+                nn.Conv2d(ndf * 8, nz, lf, 1, 0, bias=False)
+                )
+        if nz != 1 : 
+            self.fc_mu = nn.Linear(1024, dim_out)
+            self.fc_logsigma = nn.Linear(1024, dim_out)
+
+    def forward(self, x):
+        h = self.main(x).view(x.size(0), -1)
+        if self.nz == 1 : return h
+        return self.fc_mu(h), self.fc_logsigma(h)
+
+
+class LidarDecoder(nn.Module):
+    def __init__(self, dim_in=100, ngf=64, nc=1, ff=(3,32)):
+        super(LidarDecoder, self).__init__()
+        self.dim_in = dim_in
+        self.main = nn.Sequential(
+                # input is Z, going into a convolution
+                nn.ConvTranspose2d(     dim_in, ngf * 8, ff, 1, 0, bias=False), 
+                nn.BatchNorm2d(ngf * 8),
+                nn.ReLU(True),
+                # state size. (ngf*8) x 4 x 4
+                nn.ConvTranspose2d(ngf * 8, ngf * 4, (3,4), stride=2, padding=(0,1), bias=False),
+                nn.BatchNorm2d(ngf * 4),
+                nn.ReLU(True),
+                # state size. (ngf*4) x 8 x 8
+                nn.ConvTranspose2d(ngf * 4, ngf * 2, (3,4), 2, padding=(0,1), bias=False),
+                nn.BatchNorm2d(ngf * 2),
+                nn.ReLU(True),
+                # state size. (ngf*2) x 16 x 16
+                nn.ConvTranspose2d(ngf * 2,     ngf, 4, 2, 1, bias=False),
+                nn.BatchNorm2d(ngf),
+                nn.ReLU(True),
+                # state size. (ngf) x 32 x 32
+                nn.ConvTranspose2d(    ngf,      nc, 4, 2, 1, bias=False),
+                #nn.Tanh()
+                nn.Sigmoid()
+                # state size. (nc) x 64 x 64
+                )
+
+    def forward(self, z):
+        x = self.main(z.unsqueeze(2).unsqueeze(3))
+        return x
+
+
 _CONFIG_MAP = {
     'plane': (PlaneEncoder, PlaneTransition, PlaneDecoder),
-    'pendulum': (PendulumEncoder, PendulumTransition, PendulumDecoder)
+    'pendulum': (PendulumEncoder, PendulumTransition, PendulumDecoder),
+    'lidar' : (LidarEncoder, PendulumTransition, LidarDecoder)
 }
 
 
@@ -180,6 +249,6 @@ def load_config(name):
         raise ValueError("Unknown config: %s", name)
     return _CONFIG_MAP[name]
 
-from .e2c import NormalDistribution
+from e2c import NormalDistribution
 
 __all__ = ['load_config']
