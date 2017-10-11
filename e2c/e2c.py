@@ -121,9 +121,9 @@ def compute_loss(x_dec, x_next_pred_dec, x, x_next,
     
     # Reconstruction losses
     mask = (x != 0. ).float()
-    x_reconst_loss = torch.mean(mask * (x_dec - x) ** 2)
+    x_reconst_loss = torch.mean((mask * (x_dec - x)) ** 2)
     mask = (x_next != 0 ).float()
-    x_next_reconst_loss = torch.mean(mask * (x_next_pred_dec - x_next) ** 2)
+    x_next_reconst_loss = torch.mean((mask * (x_next_pred_dec - x_next)) ** 2)
 
     logvar = Qz.logsigma.mul(2)
     KLD_element = Qz.mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)

@@ -49,6 +49,24 @@ def monitor_units(kld):
     act = act.cpu().numpy()
     print act.max(), act.min(), act.mean(), '\n'
 
+def calc_gradient_penalty(netD, real_data, fake_data, gpu=0):
+    x, y = real_data, fake_data
+    alpha = torch.rand(real_data.size(0), 1, 1, 1)
+    alpha = alpha.expand(real_data.size())
+    alpha = alpha.cuda(gpu)
+    interpolates = alpha * real_data + ((1 - alpha) * fake_data)
+    interpolates = interpolates.cuda(gpu)#.transpose(2,1)
+    interpolates = autograd.Variable(interpolates, requires_grad=True)
+    disc_interpolates = netD(interpolates)
+    disc_interpolates = disc_interpolates[0] if len(disc_interpolates) > 1 else disc_interpolates
+    gradients = autograd.grad(outputs=disc_interpolates, inputs=interpolates, 
+                              grad_outputs = torch.ones(disc_interpolates.size()).cuda(gpu), 
+                              create_graph = True, retain_graph=True, only_inputs=True)[0]
+
+    gradients = gradients + 1e-16
+    return ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+
+
 #######################################################
 #                 Regular utils                       #
 #######################################################

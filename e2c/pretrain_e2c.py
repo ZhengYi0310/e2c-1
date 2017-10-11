@@ -5,14 +5,19 @@ from utils import *
 import torch.optim as optim
 
 
-LAMBDA = 1e-5 # .0005
-print_every = 250
+LAMBDA = 1e-4 # .0005
+print_every = 100
 save_every = 2
 batch_size = 16
-ext = 'e2c_bn_{}'.format(LAMBDA)
+ext = 'e2c_pretrain_{}'.format(LAMBDA)
 epochs = 200
 
 model = E2C(512*60, 100, 2, config='lidar').cuda()
+
+# load generator
+path_to_decoder = '../../Lidar/models/modelG_lsgan_400.pth'
+model.decoder.load_state_dict(torch.load(path_to_decoder))
+
 print model.encoder
 print model.decoder
 
@@ -26,6 +31,8 @@ ff = np.array([ f for (f,u,n) in dataset])
 print ff.shape[0], ff.min(), ff.max(), ff.mean()
 
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
+# for p in model.decoder.parameters():
+#     p.requires_grad = False
 
 for epoch in range(epochs) : 
     model.train()
@@ -61,7 +68,7 @@ for epoch in range(epochs) :
         # loss = bound_loss + LAMBDA * kl
         # loss =  recon_loss + alpha * kld.mean()
         
-        alpha = 1e-5 if epoch > -1 else 0
+        alpha = 1e-4 if epoch > -1 else 0
         loss = recon_loss + LAMBDA * kl.mean() + alpha * kld.mean()
         loss.mean().backward()
         optimizer.step()

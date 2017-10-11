@@ -166,10 +166,12 @@ class PendulumTransition(Transition):
 
 
 class LidarEncoder(nn.Module):
-    def __init__(self, dim_in, dim_out, ndf=64, nc=1, nz=1024, lf=(3,32)):
+    def __init__(self, dim_in, dim_out, ndf=64, nc=1, nz=1024, lf=(3,32), bn=True):
         super(LidarEncoder, self).__init__()
         self.dim_out = dim_out
         self.nz = nz
+        self.bn = bn
+        self.lrelu = nn.LeakyReLU(0.2)
 
         self.main = nn.Sequential(
                 # input is (nc) x 64 x 64
@@ -186,17 +188,23 @@ class LidarEncoder(nn.Module):
                 # state size. (ndf*4) x 8 x 8
                 nn.Conv2d(ndf * 4, ndf * 8, (3,4), 2, (0,1), bias=False),
                 nn.BatchNorm2d(ndf * 8),
-                nn.LeakyReLU(0.2, inplace=True),
+                nn.LeakyReLU(0.2, inplace=True))
                 # state size. (ndf*8) x 4 x 4
+        self.main_ = nn.Sequential(
                 nn.Conv2d(ndf * 8, nz, lf, 1, 0, bias=False)
                 )
-        if nz != 1 : 
+
+        if nz != 1 :
+            if bn : self.bn = nn.BatchNorm1d(1024)
             self.fc_mu = nn.Linear(1024, dim_out)
             self.fc_logsigma = nn.Linear(1024, dim_out)
 
     def forward(self, x):
-        h = self.main(x).view(x.size(0), -1)
+        h = self.main(x)
+        h = self.main_(h).view(x.size(0), -1)
         if self.nz == 1 : return h
+        if self.bn : 
+            h = self.lrelu(self.bn(h))
         return self.fc_mu(h), self.fc_logsigma(h)
 
 
