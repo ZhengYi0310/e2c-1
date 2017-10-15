@@ -105,8 +105,11 @@ class E2C(nn.Module):
 
         return self.x_next_pred_dec
 
-    def latent_embeddings(self, x):
+    def latent_embedding(self, x):
         return self.encode(x)[0]
+
+    def embedding_to_sample(self, z):
+        return self.decode(z)
 
     def predict(self, X, U):
         mean, logvar = self.encode(X)
@@ -114,15 +117,22 @@ class E2C(nn.Module):
         z_next_pred, Qz_next_pred = self.transition(z, Qz, U)
         return self.decode(z_next_pred)
 
+    def predict_latent(self, z, Qz, U):
+        z_next_pred, Qz_next_pred = self.transition(z, Qz, U)
+        return z_next_pred, Qz_next_pred
+
+
 
 def compute_loss(x_dec, x_next_pred_dec, x, x_next,
                  Qz, Qz_next_pred,
-                 Qz_next):
+                 Qz_next, use_mask=True):
     
     # Reconstruction losses
     mask = (x != 0. ).float()
+    if not use_mask : mask = mask * 0.  + 1.
     x_reconst_loss = torch.mean((mask * (x_dec - x)) ** 2)
     mask = (x_next != 0 ).float()
+    if not use_mask : mask = mask * 0.  + 1.
     x_next_reconst_loss = torch.mean((mask * (x_next_pred_dec - x_next)) ** 2)
 
     logvar = Qz.logsigma.mul(2)

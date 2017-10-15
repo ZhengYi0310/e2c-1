@@ -17,7 +17,7 @@ np.random.seed(1)
 torch.manual_seed(1)
 torch.cuda.manual_seed_all(1)
 
-ext = '_e2c_wgan_{}_{}_'.format(LAMBDA, lambda_adv)
+ext = '_e2c_wgan' #_{}_{}_'.format(LAMBDA, lambda_adv)
 epochs = 100
 
 model = E2C(512*60, 100, 2, config='lidar').cuda()
@@ -132,7 +132,7 @@ for epoch in range(epochs) :
             print epoch
             print('recon loss : %s   '   % (2*recons  / print_every))
             print('klds loss  : %s   '   % (2*klds    / print_every))
-            # print('kls loss   : %s   '   % (2*kls     / print_every))'''
+            print('kls loss   : %s   '   % (2*kls     / print_every))
             print('fake_d     : %s   '   % (fake_d  / gen_iters))
             print('fake_g1    : %s   '   % (fake_g1 / gen_iters))
             # print('fake_g2    : %s   '   % (fake_g2 / gen_iters))
@@ -142,10 +142,10 @@ for epoch in range(epochs) :
             monitor_units(kld_element.mul(-.5))
 
         if (iters + 1) % dump_every <= 1 : 
-            save_sample('../clouds/x_dec_%s.hkl'      % epoch, model.x_dec[0])
-            save_sample('../clouds/x_next_dec_%s.hkl' % epoch, model.x_next_dec[0])
-            save_sample('../clouds/x_%s.hkl'          % epoch, x_t[0])
-            save_sample('../clouds/x_next_%s.hkl'     % epoch, x_tp1[0])
+            save_sample('../clouds/x_dec_%s_%s.hkl'      % (ext, epoch), model.x_dec[0])
+            save_sample('../clouds/x_next_dec_%s_%s.hkl' % (ext, epoch), model.x_next_dec[0])
+            save_sample('../clouds/x_%s_%s.hkl'          % (ext, epoch), x_t[0])
+            save_sample('../clouds/x_next_%s_%s.hkl'     % (ext, epoch), x_tp1[0])
             print 'dumped samples'
 
     if (epoch + 1) % save_every == 0 : 

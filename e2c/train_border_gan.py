@@ -19,7 +19,7 @@ lambda_adv = .001
 lambda_mse = 1. - lambda_adv
 GEN_ITERS = 2         # only when lambda_adv very low
 
-model_name = 'e2c_lsgan_hid_higher_{}_{}'.format(theta_speed, lambda_adv) 
+model_name = 'e2c_lsgan_strutural_no_hid_{}_{}'.format(theta_speed, lambda_adv) 
 writer = SummaryWriter(log_dir = 'runs/' + model_name)
 
 # maximize reproducibility
@@ -39,7 +39,7 @@ print model.encoder
 print model.decoder
 print netD
 
-dataset = hkl.load('../data/triplets_5_train.hkl')
+dataset = hkl.load('../data/triplets_borders_5_train.hkl')
 train_loader = torch.utils.data.DataLoader(dataset, 
                                            batch_size=batch_size,
                                            shuffle=True)
@@ -68,7 +68,7 @@ for epoch in range(epochs) :
         set_grad(model, False)
         
         # fetch data
-        x_t, _, x_tp1 = next(data_iter)
+        x_t, _, x_tp1, _, _ = next(data_iter)
         iters += 1
 
         # to make sure we go through all available samples
@@ -103,13 +103,15 @@ for epoch in range(epochs) :
             set_grad(netD, False)
             set_grad(model, True)
 
-            x_t, u_t, x_tp1 = next(data_iter)
+            x_t, u_t, x_tp1, border_x_t, border_x_tp1 = next(data_iter)
             iters += 1
 
             # put on GPU
             x_t   = Variable(x_t.cuda())
             u_t   = Variable(u_t.cuda())
             x_tp1 = Variable(x_tp1.cuda())
+            border_x_t = Variable(border_x_t.cuda())
+            border_x_tp1 = Variable(border_x_tp1.cuda())
 
             # run forward pass
             model(x_t, u_t, x_tp1)
@@ -124,6 +126,13 @@ for epoch in range(epochs) :
                                               model.Qz_next_pred, 
                                               model.Qz_next))
 
+            # structural loss
+            mask = (border_x_t != 0.).float()
+            recon_x_t   = torch.mean(mask * (model.x_dec - x_t) ** 2)
+            mask = (border_x_tp1 != 0.).float()
+            recon_x_tp1 = torch.mean(mask * (model.x_next_pred_dec - x_tp1) ** 2)
+            
+                                              
             # draw sample from prior
             noise = Variable(torch.cuda.FloatTensor(batch_size, 100, 1, 1).cuda())
             prior = model.decode(noise)
@@ -146,11 +155,11 @@ for epoch in range(epochs) :
 
             alpha = theta
             recon_loss = recon_x_t + recon_x_tp1
-            loss = (# lambda_mse * recon_loss + 
+            loss = (50 * recon_loss + # 50 before
                     theta * kl.mean() + 
                     alpha * kld.mean() + 
-                    lambda_adv * (loss_adv) + #)# + loss_prior) + 
-                    lambda_mse * loss_hid).mean()
+                    lambda_adv * (loss_adv)).mean()# + #)# + loss_prior) + 
+                    #lambda_mse * loss_hid).mean()
 
             total_loss += loss.cpu().data[0]
             loss.backward()

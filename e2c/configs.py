@@ -56,7 +56,8 @@ class Transition(nn.Module):
         # need to compute the parameters for distributions
         # as well as for the samples
         u = u.unsqueeze(2)
-
+        # FIX FOR BS = 1
+        if h.size(0) == 1 : o = o.unsqueeze(2)
         d = A.bmm(Q.mu.unsqueeze(2)).add(B.bmm(u)).add(o).squeeze(2)
         sample = A.bmm(h.unsqueeze(2)).add(B.bmm(u)).add(o).squeeze(2)
 
@@ -180,7 +181,8 @@ class LidarEncoder(nn.Module):
                 # state size. (ndf) x 32 x 32
                 nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
                 nn.BatchNorm2d(ndf * 2),
-                nn.LeakyReLU(0.2, inplace=True),
+                nn.LeakyReLU(0.2, inplace=True))
+        self.main_ = nn.Sequential(
                 # state size. (ndf*2) x 16 x 16
                 nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
                 nn.BatchNorm2d(ndf * 4),
@@ -190,7 +192,9 @@ class LidarEncoder(nn.Module):
                 nn.BatchNorm2d(ndf * 8),
                 nn.LeakyReLU(0.2, inplace=True))
                 # state size. (ndf*8) x 4 x 4
-        self.main_ = nn.Sequential(
+        # in previous versions, main = main + main_
+        #                       main_ = main__
+        self.main__ = nn.Sequential(
                 nn.Conv2d(ndf * 8, nz, lf, 1, 0, bias=False)
                 )
 
@@ -199,10 +203,14 @@ class LidarEncoder(nn.Module):
             self.fc_mu = nn.Linear(1024, dim_out)
             self.fc_logsigma = nn.Linear(1024, dim_out)
 
-    def forward(self, x):
-        h = self.main(x)
-        h = self.main_(h).view(x.size(0), -1)
-        if self.nz == 1 : return h
+    def forward(self, x, return_hidden=False):
+        x = self.main(x)
+        # hid = self.main(x)
+        hid = self.main_(x)
+        # h = self.main_(hid).view(x.size(0), -1)
+        h = self.main__(hid).view(x.size(0), -1)
+        if self.nz == 1 : 
+            return (h, hid) if return_hidden else h
         if self.bn : 
             h = self.lrelu(self.bn(h))
         return self.fc_mu(h), self.fc_logsigma(h)
@@ -237,7 +245,8 @@ class LidarDecoder(nn.Module):
                 )
 
     def forward(self, z):
-        x = self.main(z.unsqueeze(2).unsqueeze(3))
+        if len(z.size()) == 2 : z = z.unsqueeze(2).unsqueeze(3)
+        x = self.main(z)
         return x
 
 

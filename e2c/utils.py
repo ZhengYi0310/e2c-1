@@ -49,6 +49,7 @@ def monitor_units(kld):
     act = act.cpu().numpy()
     print act.max(), act.min(), act.mean(), '\n'
 
+
 def calc_gradient_penalty(netD, real_data, fake_data, gpu=0):
     x, y = real_data, fake_data
     alpha = torch.rand(real_data.size(0), 1, 1, 1)
@@ -85,8 +86,10 @@ def oned_to_threed(velo):
     return out
 
 
-def save_sample(path, sample):
-    sample = sample.permute(1,2,0).contiguous().cpu().data.numpy() 
+def save_sample(path, sample, is_numpy=False):
+    if not is_numpy : 
+        sample = sample.permute(1,2,0).contiguous().cpu().data.numpy() 
+    
     sample = oned_to_threed(sample).reshape(-1, 3)
     hkl.dump(sample, path)
 
@@ -99,8 +102,10 @@ def preprocess_dataset(merge_every=3, train='test', extra_ind=[8, 9, 19]):
     valid   = hkl.load('../../prednet/kitti_data/valid_'+train+'_1d_512.hkl')
     index = 0
     X = X.astype('float32') / 80
+    avg = X.mean(axis=0).mean(axis=1)
+    std = X.std(axis=0).mean(axis=1)
     X = X.transpose(0, 3, 1, 2)
-    
+     
     speed = extra[:, extra_ind[:-1]]
     speed = np.sqrt(np.sum(np.square(speed), axis=1))
     angle = extra[:, extra_ind[-1]]
@@ -116,19 +121,17 @@ def preprocess_dataset(merge_every=3, train='test', extra_ind=[8, 9, 19]):
                 is_valid = False
 
         if is_valid :
-            # x_t  = X[index : index + merge_every].mean(axis=0)
-            # x_t1 = X[index + merge_every : index + 2*merge_every].mean(axis=0)
-            # u_t  = action[index + merge_every : index + 2*merge_every].mean(axis=0)
             x_t    = X[index]
+            borders_x_t = extract_edges(x_t.transpose(1, 2, 0), avg, std).transpose(2, 0, 1)
             x_t1   = X[index + merge_every]
             u_t    = action[index : index + merge_every].mean(axis=0)
-
-            triplets.append((x_t, u_t, x_t1))
+            borders_x_t1 = extract_edges(x_t1.transpose(1, 2, 0), avg, std).transpose(2, 0, 1)
+            triplets.append((x_t, u_t, x_t1, borders_x_t, borders_x_t1))
 
         index += merge_every
     
     print('% samples' % len(triplets))
-    hkl.dump(triplets, '../data/triplets_%s_%s.hkl' % (merge_every, train))
+    hkl.dump(triplets, '../data/triplets_borders_%s_%s.hkl' % (merge_every, train))
     
         
 def iter_minibatches(inputs, batch_size, extra=None, forever=False):
@@ -142,9 +145,25 @@ def iter_minibatches(inputs, batch_size, extra=None, forever=False):
         if not forever : 
             break
 
+
 def set_grad(model, value):
     for p in model.parameters():
         p.requires_grad = value
 
+
+def extract_edges(velo, avg, std):
+    out = np.array(velo, copy=True)
+    for i in range(velo.shape[0]-1):
+        mu, sigma = avg[i], std[i]
+        for j in range(velo.shape[1]):
+            pt = velo[i][j]
+            if (np.abs(velo[i][j] - velo[i+1][j]) > 0.001 
+                or (pt > mu - 0.01*sigma and pt < mu + 0.01*sigma))  : 
+                out[i][j] = 0.
+    return out
+            
+
+
+
 if __name__ == '__main__' : 
-    preprocess_dataset(train='train', merge_every=5)
+    preprocess_dataset(train='val', merge_every=5)
