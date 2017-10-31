@@ -80,8 +80,8 @@ class GymPendulumDatasetV2(object):
     def _process_image(img):
         temp = np.squeeze(np.reshape(np.array((img.convert('L').
                            resize((GymPendulumDatasetV2.width,
-                                   GymPendulumDatasetV2.height)))), (-1, GymPendulumDatasetV2.width * GymPendulumDatasetV2.height)).astype(np.float32) / 255., axis=0)
-        temp[temp != 1] = 0
+                                   GymPendulumDatasetV2.height)))), (-1, GymPendulumDatasetV2.width * GymPendulumDatasetV2.height)).astype(np.float32), axis=0)
+        # temp[temp != 1] = 0
         return temp
 
     def _process(self):
@@ -211,11 +211,12 @@ class GymPendulumDatasetV2(object):
 if __name__=="__main__":
     # GymPendulumDatasetV2.sample(1000, 'data/pendulum_markov_train')
     # GymPendulumDatasetV2.sample(100, 'data/pendulum_markov_test')
-    dataset = GymPendulumDatasetV2('data/pendulum_markov_test')
+    dataset = GymPendulumDatasetV2('data/pendulum_markov_train')
     perm0 = np.arange(dataset._num_examples)
     before_image = [np.reshape(before_img, (-1, 4608)) for ind, (before_img,control_signal, after_image, before_states, after_states) in enumerate(dataset)]
     # print ((np.array(before_image, np.float64))).shape
     # print np.array(before_image, np.float64)[0,:,23*48 + 24]
+    print before_image[0].shape
     after_image = [np.reshape(after_image, (-1, 4608)) for
                  ind, (before_img, control_signal, after_image, before_states, after_states) in enumerate(dataset)]
     print ((np.array(after_image, np.float64))).shape
@@ -232,9 +233,10 @@ if __name__=="__main__":
     # before_image = [before_image_single[before_image_single != 255] = 0 for ind,(before_image_single) in enumerate(before_image)]
     # for i in range(len(before_image)):
     #     before_image[i][before_image[i] != 255] = 0.
-    plt.imshow(np.reshape(before_image[60], (-1, 48, 2 * 48)))
+    print before_image[60]
+    plt.imshow(np.reshape(before_image[60], (48, 2 * 48)), cmap="gray")
     plt.show()
-    plt.imshow(np.reshape(after_image[0], (-1, 48,  2 * 48)))
+    plt.imshow(np.reshape(after_image[0], (48,  2 * 48)), cmap="gray")
     plt.show()
     # a = np.array([[1, 2], [3, 4], [10, 11]])
     # a = np.reshape(a, ())

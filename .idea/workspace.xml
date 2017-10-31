@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="94b61967-396c-4bf4-9c94-c85c6f5be1c8" name="Default" comment="" />
+    <list default="true" id="94b61967-396c-4bf4-9c94-c85c6f5be1c8" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/e2c/datasets.py" afterPath="$PROJECT_DIR$/e2c/datasets.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/e2c/e2c.py" afterPath="$PROJECT_DIR$/e2c/e2c.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/e2c/train_e2c.py" afterPath="$PROJECT_DIR$/e2c/train_e2c.py" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -12,11 +17,11 @@
   <component name="ExecutionTargetManager" SELECTED_TARGET="default_target" />
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="train_e2c.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="train_e2c.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/e2c/train_e2c.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+            <state relative-caret-position="-557">
+              <caret line="83" column="38" lean-forward="false" selection-start-line="83" selection-start-column="38" selection-end-line="83" selection-end-column="38" />
               <folding>
                 <element signature="e#0#17#0" expanded="true" />
               </folding>
@@ -24,11 +29,23 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="datasets.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="e2c.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/e2c/e2c.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="171">
+              <caret line="69" column="36" lean-forward="false" selection-start-line="69" selection-start-column="36" selection-end-line="69" selection-end-column="36" />
+              <folding>
+                <element signature="e#0#12#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="datasets.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/e2c/datasets.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1083">
-              <caret line="258" column="0" lean-forward="false" selection-start-line="258" selection-start-column="0" selection-end-line="258" selection-end-column="0" />
+            <state relative-caret-position="246">
+              <caret line="236" column="57" lean-forward="true" selection-start-line="236" selection-start-column="57" selection-end-line="236" selection-end-column="57" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -45,11 +62,13 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/e2c/datasets.py" />
+        <option value="$PROJECT_DIR$/e2c/e2c.py" />
+        <option value="$PROJECT_DIR$/e2c/train_e2c.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="156" />
+    <option name="x" value="39" />
     <option name="y" value="36" />
     <option name="width" value="1764" />
     <option name="height" value="934" />
@@ -102,7 +121,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../e2c.2.2/e2c" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/e2c/train_e2c.py" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -218,10 +237,10 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="156" y="36" width="1764" height="934" extended-state="0" />
+    <frame x="39" y="36" width="1764" height="934" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="-1" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.32934132" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -249,22 +268,42 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/e2c/train_e2c.py">
+    <entry file="file://$PROJECT_DIR$/e2c/datasets.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+        <state relative-caret-position="246">
+          <caret line="236" column="57" lean-forward="true" selection-start-line="236" selection-start-column="57" selection-end-line="236" selection-end-column="57" />
           <folding>
-            <element signature="e#0#17#0" expanded="true" />
+            <element signature="e#0#11#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/e2c/datasets.py">
+    <entry file="file://$PROJECT_DIR$/e2c/vae.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1083">
-          <caret line="258" column="0" lean-forward="false" selection-start-line="258" selection-start-column="0" selection-end-line="258" selection-end-column="0" />
+        <state relative-caret-position="-342">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
-            <element signature="e#0#11#0" expanded="true" />
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/e2c/e2c.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="171">
+          <caret line="69" column="36" lean-forward="false" selection-start-line="69" selection-start-column="36" selection-end-line="69" selection-end-column="36" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/e2c/train_e2c.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-557">
+          <caret line="83" column="38" lean-forward="false" selection-start-line="83" selection-start-column="38" selection-end-line="83" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#17#0" expanded="true" />
           </folding>
         </state>
       </provider>

@@ -67,7 +67,7 @@ class E2C(nn.Module):
         return self.encoder(x)
 
     def decode(self, z):
-        return self.decoder(z)
+        return self.decoder(z) * 255
 
     def transition(self, z, Qz, u):
         return self.trans(z, Qz, u)

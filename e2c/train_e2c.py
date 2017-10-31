@@ -22,7 +22,7 @@ print_every = 25        # mini batches
 save_every = 5          # epochs
 dump_every = 2          # epochs
 batch_size = 100
-epochs = 100
+epochs = 2000
 
 model_name = 'e2c_anneal_10_' + '_' + str(theta_speed)
 # writer = SummaryWriter(log_dir = 'runs/' + model_name)
@@ -123,11 +123,11 @@ plt.figure(figsize=(20, 30))
 for i in range(3):
 
     plt.subplot(3, 2, 2*i + 1)
-    plt.imshow(recon_x_t_np[i].reshape(48, 2 * 48),vmin=0, vmax=1, cmap="gray")
+    plt.imshow(recon_x_t_np[i].reshape(48, 2 * 48), cmap="gray")
     plt.title("Reconstruct")
     plt.colorbar()
     plt.subplot(3, 2, 2*i + 2)
-    plt.imshow(x_t_np[i].reshape(48, 2 * 48), vmin=0, vmax=1,cmap="gray")
+    plt.imshow(x_t_np[i].reshape(48, 2 * 48) / 255,cmap="gray")
     plt.title("Training Input")
     plt.colorbar()
 plt.tight_layout()
