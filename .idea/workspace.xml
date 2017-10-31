@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="94b61967-396c-4bf4-9c94-c85c6f5be1c8" name="Default" comment="">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/e2c/data/pendulum_markov_test/processed.pkl" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/e2c/data/sample_pendulum_data.py" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/e2c/datasets.py" afterPath="$PROJECT_DIR$/e2c/datasets.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/e2c/e2c.py" afterPath="$PROJECT_DIR$/e2c/e2c.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/e2c/train_e2c.py" afterPath="$PROJECT_DIR$/e2c/train_e2c.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -20,8 +20,8 @@
       <file leaf-file-name="train_e2c.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/e2c/train_e2c.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-557">
-              <caret line="83" column="38" lean-forward="false" selection-start-line="83" selection-start-column="38" selection-end-line="83" selection-end-column="38" />
+            <state relative-caret-position="165">
+              <caret line="76" column="0" lean-forward="true" selection-start-line="76" selection-start-column="0" selection-end-line="76" selection-end-column="0" />
               <folding>
                 <element signature="e#0#17#0" expanded="true" />
               </folding>
@@ -68,8 +68,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="39" />
-    <option name="y" value="36" />
+    <option name="x" value="126" />
+    <option name="y" value="24" />
     <option name="width" value="1764" />
     <option name="height" value="934" />
   </component>
@@ -237,7 +237,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="39" y="36" width="1764" height="934" extended-state="0" />
+    <frame x="126" y="24" width="1764" height="934" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -300,8 +300,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/e2c/train_e2c.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-557">
-          <caret line="83" column="38" lean-forward="false" selection-start-line="83" selection-start-column="38" selection-end-line="83" selection-end-column="38" />
+        <state relative-caret-position="165">
+          <caret line="76" column="0" lean-forward="true" selection-start-line="76" selection-start-column="0" selection-end-line="76" selection-end-column="0" />
           <folding>
             <element signature="e#0#17#0" expanded="true" />
           </folding>

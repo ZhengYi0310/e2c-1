@@ -22,7 +22,7 @@ print_every = 25        # mini batches
 save_every = 5          # epochs
 dump_every = 2          # epochs
 batch_size = 100
-epochs = 2000
+epochs = 200
 
 model_name = 'e2c_anneal_10_' + '_' + str(theta_speed)
 # writer = SummaryWriter(log_dir = 'runs/' + model_name)
@@ -75,13 +75,13 @@ for epoch in range(epochs) :
             recon_x_t_np = (recon_x_t_np.data).cpu().numpy()
             x_t_np = (x_t.data).cpu().numpy()
 
-        recon_loss = recon_x_t #+ recon_x_tp1
+        recon_loss = recon_x_t + recon_x_tp1
         recons += recon_loss.cpu().data[0]
         klds += kld.cpu().data[0]
         kls += kl.cpu().data[0]
         
         alpha = 0.25
-        loss = (recon_loss + kl.mean()).mean() #+ alpha * kld.mean()).mean()
+        loss = (recon_loss + kl.mean() + alpha * kld.mean()).mean() #+ alpha * kld.mean()).mean()
         total_loss += loss.cpu().data[0]
         loss.backward()
         optimizer.step()
