@@ -1,24 +1,22 @@
 import glob
 import os
 from os import path
-
 from PIL import Image
-
 import matplotlib.pyplot as plt
 import numpy as np
 import gym
 import json
+import random
+
 from datetime import datetime
-from torchvision.transforms import ToTensor
-from torch.utils.data import Dataset
-from .tf_e2c.plane_data2 import T, num_t
+# from torchvision.transforms import ToTensor
+#from torch.utils.data import Dataset
 from skimage.transform import resize
 from skimage.color import rgb2gray
 from tqdm import trange, tqdm
 import pickle
 
-
-class PendulumData(Dataset):
+class PendulumData(object):
     def __init__(self, root, split):
         if split not in ['train', 'test', 'all']:
             raise ValueError
@@ -57,88 +55,9 @@ class PendulumData(Dataset):
     def __getitem__(self, index):
         return self.images[index], self.actions[index], self.images[index]
 
-
-class PlaneDataset(Dataset):
-    def __init__(self, planedata):
-        self.planedata = planedata
-
-    def __len__(self):
-        return T * num_t  # Total number of samples
-
-    def __getitem__(self, index):
-        index = np.random.randint(0, num_t)  # Sample any one of them
-        t = np.random.randint(0, T - 1)
-        x = np.array(self.planedata.getX(index, t))
-        x_next = np.array(self.planedata.getX(index, t + 1))
-        u = np.copy(self.planedata.U[index, t, :])
-        return x, u, x_next
-
-
-class GymPendulumDataset(Dataset):
-    """Dataset definition for the Gym Pendulum task"""
-    width = 40
-    height = 40
-    action_dim = 1
-    """Sample from the OpenAI Gym environment, requires a patched version of gym"""
-
-    def __init__(self, filename):
-        _data = np.load(filename)
-        self.X0 = np.copy(_data['X0'])  # Copy to memory, otherwise it's slow.
-        self.X1 = np.copy(_data['X1'])
-        self.U = np.copy(_data['U'])
-        _data.close()
-
-    def __len__(self):
-        return len(self.X0)
-
-    def __getitem__(self, index):
-        return self.X0[index], self.U[index], self.X1[index]
-
-    @classmethod
-    def all_states(cls):
-        _env = gym.make('Pendulum-v0').env
-        width = GymPendulumDataset.width
-        height = GymPendulumDataset.height
-        X = np.zeros((360, width, height))
-
-        for i in range(360):
-            th = i / 360. * 2 * np.pi
-            state = _env.render_state(th)
-            X[i, :, :] = resize(rgb2gray(state), (width, height), mode='reflect')
-        _env.close()
-        _env.viewer.close()
-        return X
-
-    @classmethod
-    def sample_trajectories(self, sample_size, step_size=1, apply_control=True):
-        _env = gym.make('Pendulum-v0').env
-        X0 = np.zeros((sample_size, 500, 500, 3), dtype=np.uint8)
-        U = np.zeros((sample_size, 1), dtype=np.float32)
-        X1 = np.zeros((sample_size, 500, 500, 3), dtype=np.uint8)
-        for i in range(sample_size):
-            th = np.random.uniform(0, np.pi * 2)
-            # thdot = np.random.uniform(-8, 8)
-            thdot = 0
-            state = np.array([th, thdot])
-            initial = state
-            # apply the same control over a few timesteps
-            if apply_control:
-                u = np.random.uniform(-2, 2, size=(1,))
-            else:
-                u = np.zeros((1,))
-            for _ in range(step_size):
-                state = _env.step_from_state(state, u)
-
-            X0[i, :, :, :] = _env.render_state(initial[0])
-            U[i, :] = u
-            X1[i, :, :, :] = _env.render_state(state[0])
-        _env.viewer.close()
-        return X0, U, X1
-
-
-class GymPendulumDatasetV2(Dataset):
-    width = 40 * 2
-    height = 40
+class GymPendulumDatasetV2(object):
+    width = 48 * 2
+    height = 48
     action_dim = 1
 
     def __init__(self, dir):
@@ -146,6 +65,10 @@ class GymPendulumDatasetV2(Dataset):
         with open(path.join(dir, 'data.json')) as f:
             self._data = json.load(f)
         self._process()
+        self._index_in_epoch = 0
+        self._epochs_completed = False
+        self._num_examples = len(self)
+        self.processed = self._processed
 
     def __len__(self):
         return len(self._data['samples'])
@@ -155,9 +78,11 @@ class GymPendulumDatasetV2(Dataset):
 
     @staticmethod
     def _process_image(img):
-        return ToTensor()((img.convert('L').
+        temp = np.squeeze(np.reshape(np.array((img.convert('L').
                            resize((GymPendulumDatasetV2.width,
-                                   GymPendulumDatasetV2.height))))
+                                   GymPendulumDatasetV2.height)))), (-1, GymPendulumDatasetV2.width * GymPendulumDatasetV2.height)).astype(np.float32) / 255., axis=0)
+        temp[temp != 1] = 0
+        return temp
 
     def _process(self):
         preprocessed_file = os.path.join(self.dir, 'processed.pkl')
@@ -168,8 +93,10 @@ class GymPendulumDatasetV2(Dataset):
                 after = Image.open(os.path.join(self.dir, sample['after']))
 
                 processed.append((self._process_image(before),
-                                  np.array(sample['control']),
-                                  self._process_image(after)))
+                                  np.array(sample['control'], dtype=np.float32),
+                                  self._process_image(after),
+                                  np.array(sample['before_state']),
+                                  np.array(sample['after_state'])))
 
             with open(preprocessed_file, 'wb') as f:
                 pickle.dump(processed, f)
@@ -196,8 +123,8 @@ class GymPendulumDatasetV2(Dataset):
             os.makedirs(output_dir)
 
         for i in trange(sample_size):
-            th = np.random.uniform(0, np.pi * 2)
-            thdot = np.random.uniform(-8, 8)
+            th = np.random.uniform(-3, 3)
+            thdot = np.random.uniform(-10, 10)
 
             state = np.array([th, thdot])
             u0 = np.array([0])
@@ -228,10 +155,10 @@ class GymPendulumDatasetV2(Dataset):
             if not path.exists(path.join(output_dir, shard_path)):
                 os.makedirs(path.join(output_dir, shard_path))
 
-            before_file = path.join(shard_path, 'before-{:05d}.jpg'.format(i))
+            before_file = path.join(shard_path, 'before-{:05d}.png'.format(i))
             plt.imsave(path.join(output_dir, before_file), before)
 
-            after_file = path.join(shard_path, 'after-{:05d}.jpg'.format(i))
+            after_file = path.join(shard_path, 'after-{:05d}.png'.format(i))
             plt.imsave(path.join(output_dir, after_file), after)
 
             samples.append({
@@ -256,3 +183,60 @@ class GymPendulumDatasetV2(Dataset):
                 }, outfile, indent=2)
 
         env.viewer.close()
+
+    def next_batch(self, batch_size, shuffle=True):
+        start = self._index_in_epoch
+        # Shuffle for the first epoch
+        if self._epochs_completed == 0 and start == 0 and shuffle:
+            random.shuffle(self.processed)
+        if start + batch_size > self._num_examples:
+            # Finished epoch
+            # print("[WARN]: All datas have been iterated!!!!")
+            self._epochs_completed += 1
+            rest_num_examples = self._num_examples - start
+            processed_data_rest_part = self.processed[start:self._num_examples]
+
+            if shuffle:
+                random.shuffle(self.processed)
+            start = 0
+            self._index_in_epoch = batch_size - rest_num_examples
+            processed_data_new_part = self.processed[start:self._index_in_epoch]
+            return processed_data_rest_part + processed_data_new_part
+        else:
+            self._index_in_epoch += batch_size
+            end = self._index_in_epoch
+            return self.processed[start:end]
+
+
+if __name__=="__main__":
+    # GymPendulumDatasetV2.sample(1000, 'data/pendulum_markov_train')
+    # GymPendulumDatasetV2.sample(100, 'data/pendulum_markov_test')
+    dataset = GymPendulumDatasetV2('data/pendulum_markov_test')
+    perm0 = np.arange(dataset._num_examples)
+    before_image = [np.reshape(before_img, (-1, 4608)) for ind, (before_img,control_signal, after_image, before_states, after_states) in enumerate(dataset)]
+    # print ((np.array(before_image, np.float64))).shape
+    # print np.array(before_image, np.float64)[0,:,23*48 + 24]
+    after_image = [np.reshape(after_image, (-1, 4608)) for
+                 ind, (before_img, control_signal, after_image, before_states, after_states) in enumerate(dataset)]
+    print ((np.array(after_image, np.float64))).shape
+    control_signal = [np.reshape(control_signal, (-1, dataset.action_dim)) for ind, (before_img,control_signal, after_img, before_states, after_states) in enumerate(dataset)]
+    print (np.squeeze(np.array(control_signal, np.float64), axis=1)).shape
+    # print (dataset.next_batch(100)[0][0])
+    # print len(dataset.next_batch(10))
+    # random.shuffle(dataset.processed)
+    # print len(dataset.processed[1:3] + (dataset.processed[2:4]))
+
+    # dataset_before =  (dataset[0][0])
+    # dataset_after = (dataset[0][2])
+    # print (dataset_before)
+    # before_image = [before_image_single[before_image_single != 255] = 0 for ind,(before_image_single) in enumerate(before_image)]
+    # for i in range(len(before_image)):
+    #     before_image[i][before_image[i] != 255] = 0.
+    plt.imshow(np.reshape(before_image[60], (-1, 48, 2 * 48)))
+    plt.show()
+    plt.imshow(np.reshape(after_image[0], (-1, 48,  2 * 48)))
+    plt.show()
+    # a = np.array([[1, 2], [3, 4], [10, 11]])
+    # a = np.reshape(a, ())
+    # print(dataset[0][3])
+    # print(dataset[0][4])

@@ -60,7 +60,7 @@ class E2C(nn.Module):
         enc, trans, dec = load_config(config)
         self.encoder = enc(dim_in, dim_z)
         self.z_dim = dim_z
-        self.decoder = dec(dim_z) #dim_z, dim_in)
+        self.decoder = dec(dim_z, dim_in)
         self.trans = trans(dim_z, dim_u)
 
     def encode(self, x):
