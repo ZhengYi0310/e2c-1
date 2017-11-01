@@ -13,7 +13,7 @@ import pdb
 import hickle as hkl
 import torch.autograd as autograd
 from PIL import Image
-import ot
+# import ot
 import hickle as hkl
 
 #######################################################
