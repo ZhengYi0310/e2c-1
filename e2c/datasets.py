@@ -81,7 +81,7 @@ class GymPendulumDatasetV2(object):
         temp = np.squeeze(np.reshape(np.array((img.convert('L').
                            resize((GymPendulumDatasetV2.width,
                                    GymPendulumDatasetV2.height)))), (-1, GymPendulumDatasetV2.width * GymPendulumDatasetV2.height)).astype(np.float32), axis=0)
-        # temp[temp != 1] = 0
+        # temp[temp != 255.] = 0.
         return temp
 
     def _process(self):
@@ -123,7 +123,7 @@ class GymPendulumDatasetV2(object):
             os.makedirs(output_dir)
 
         for i in trange(sample_size):
-            th = np.random.uniform(-3, 3)
+            th = np.random.uniform(0, 2 * np.pi)
             thdot = np.random.uniform(-10, 10)
 
             state = np.array([th, thdot])
@@ -209,7 +209,7 @@ class GymPendulumDatasetV2(object):
 
 
 if __name__=="__main__":
-    # GymPendulumDatasetV2.sample(1000, 'data/pendulum_markov_train')
+    GymPendulumDatasetV2.sample(1000, 'data/pendulum_markov_train')
     # GymPendulumDatasetV2.sample(100, 'data/pendulum_markov_test')
     dataset = GymPendulumDatasetV2('data/pendulum_markov_train')
     perm0 = np.arange(dataset._num_examples)

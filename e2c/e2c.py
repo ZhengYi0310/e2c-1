@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.autograd import Variable
+from losses import binary_crossentropy
 import pdb
 
 
@@ -67,7 +68,7 @@ class E2C(nn.Module):
         return self.encoder(x)
 
     def decode(self, z):
-        return self.decoder(z) * 255
+        return self.decoder(z)
 
     def transition(self, z, Qz, u):
         return self.trans(z, Qz, u)
@@ -127,13 +128,15 @@ def compute_loss(x_dec, x_next_pred_dec, x, x_next,
                  Qz, Qz_next_pred,
                  Qz_next, use_mask=True):
     
-    # Reconstruction losses
-    mask = (x != 0. ).float()
-    if not use_mask : mask = mask * 0.  + 1.
-    x_reconst_loss = torch.mean((mask * (x_dec - x)) ** 2)
-    mask = (x_next != 0 ).float()
-    if not use_mask : mask = mask * 0.  + 1.
-    x_next_reconst_loss = torch.mean((mask * (x_next_pred_dec - x_next)) ** 2)
+    # # Reconstruction losses
+    # mask = (x != 0. ).float()
+    # if not use_mask : mask = mask * 0.  + 1.
+    # x_reconst_loss = torch.mean((mask * (x_dec - x)) ** 2)
+    # mask = (x_next != 0 ).float()
+    # if not use_mask : mask = mask * 0.  + 1.
+    # x_next_reconst_loss = torch.mean((mask * (x_next_pred_dec - x_next)) ** 2)
+    x_reconst_loss = -binary_crossentropy(x, x_dec).sum(dim=1)
+    x_next_reconst_loss = -binary_crossentropy(x_next, x_next_pred_dec).sum(dim=1)
 
     logvar = Qz.logsigma.mul(2)
     KLD_element = Qz.mu.pow(2).add_(logvar.exp()).mul_(-1).add_(1).add_(logvar)
