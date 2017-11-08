@@ -22,7 +22,7 @@ print_every = 25        # mini batches
 save_every = 5          # epochs
 dump_every = 2          # epochs
 batch_size = 100
-epochs = 5
+epochs = 150
 
 model_name = 'e2c_anneal_10_' + '_' + str(theta_speed)
 # writer = SummaryWriter(log_dir = 'runs/' + model_name)
@@ -30,15 +30,16 @@ model_name = 'e2c_anneal_10_' + '_' + str(theta_speed)
 model = E2C(48 * 48 * 2, 3, 1, config='pendulum').cuda()
 print model.encoder
 print model.decoder
-
-# dataset = hkl.load('../data/triplets_5_train.hkl')
+print model.transition
+#
+# # dataset = hkl.load('../data/triplets_5_train.hkl')
 pendulum_dataset = GymPendulumDatasetV2('data/pendulum_markov_train')
 train_loader = torch.utils.data.DataLoader(pendulum_dataset,
                                            batch_size=batch_size,
                                            shuffle=True)
 # theta_speed /= len(train_loader)
 
-optimizer = optim.Adam(model.parameters(), lr=3e-4, betas=(0.1, 0.1))
+optimizer = optim.Adam(model.parameters(), lr=0.0001, betas=(0.1, 0.1))
 # writes = 0
 recon_x_t_np = None
 x_t_np = None
@@ -55,6 +56,7 @@ for epoch in range(epochs) :
     model.train()
     recons, kls, klds, total_loss, iters = [0] * 5
     batch_loss = None
+    l2_reg = None
     # writer.add_scalar('data/theta', theta, epoch)
     for batch_idx, data in enumerate(train_loader):
         iters += 1
@@ -62,14 +64,20 @@ for epoch in range(epochs) :
         x_t, u_t, x_tp1, state_t, state_tp1 = data
 
         # put on GPU
-        x_t   = Variable((x_t / 255.).cuda())
+        x_t   = Variable((x_t).cuda())
         u_t   = Variable(u_t.cuda())
-        x_tp1 = Variable((x_tp1 / 255.).cuda())
+        x_tp1 = Variable((x_tp1).cuda())
         state_t = Variable((state_t).cuda())
         state_tp1 = Variable((state_tp1).cuda())
 
         # run forward pass
         model(x_t, action=u_t, x_next=x_tp1)
+
+        # for W in model.parameters():
+        #     if l2_reg is None:
+        #         l2_reg = W.norm(2)
+        #     else:
+        #         l2_reg = l2_reg + W.norm(2)
 
         # calculate loss
         recon_x_t, recon_x_tp1, kld_element, kld, kl = (
@@ -91,7 +99,7 @@ for epoch in range(epochs) :
             x_t_np = (x_t.data).cpu().numpy()
         if epoch == epochs - 1:
             z_mean_numpy[batch_idx * batch_size:batch_idx * batch_size + batch_size, :] = (model.latent_embedding(x_t)).data.cpu().numpy()
-            print (model.latent_embedding(x_t)).data.cpu().numpy()
+            # print (model.latent_embedding(x_t)).data.cpu().numpy()
             state_numpy_train[batch_idx * batch_size:batch_idx * batch_size + batch_size, :] = (state_t.data).cpu().numpy()
             state_tp1_numpy_train[batch_idx * batch_size:batch_idx * batch_size + batch_size, :] = (state_tp1.data).cpu().numpy()
 
@@ -195,10 +203,10 @@ for i in range(3):
     plt.colorbar()
 plt.tight_layout()
 plt.show()
-
+# #
 latent_dim = 3
 model = E2C(48 * 48 * 2, latent_dim , 1, config='pendulum').cuda()
-model_name = 'e2c_anneal_10_' + '_' + str(theta_speed) + '4'
+model_name = 'e2c_anneal_10_' + '_' + str(theta_speed) + '149'
 path = 'models/' + model_name + '.pth'
 model.load_state_dict(torch.load(path))
 
@@ -226,9 +234,9 @@ for batch_idx, data in enumerate(test_loader):
     x_t, u_t, x_tp1, state_t, state_tp1 = data
 
     # put on GPU
-    x_t = Variable((x_t / 255.).cuda())
+    x_t = Variable((x_t).cuda())
     u_t = Variable(u_t.cuda())
-    x_tp1 = Variable((x_tp1 / 255.).cuda())
+    x_tp1 = Variable((x_tp1).cuda())
     state_t = Variable(state_t.cuda())
     state_tp1 = Variable(state_tp1.cuda())
 
@@ -252,12 +260,12 @@ print x_tp1_np.shape
 print recon_x_t_np.shape
 print precit_x_tp1_np.shape
 plt.figure(figsize=(20, 30))
-for i in range(3):
-    plt.subplot(3, 2, 2 * i + 1)
+for i in range(5):
+    plt.subplot(5, 2, 2 * i + 1)
     plt.imshow(recon_x_t_np[i].reshape(48, 2 * 48), cmap="gray")
     plt.title("Reconstruct")
     plt.colorbar()
-    plt.subplot(3, 2, 2 * i + 2)
+    plt.subplot(5, 2, 2 * i + 2)
     plt.imshow(x_t_np[i].reshape(48, 2 * 48), cmap="gray")
     plt.title("Training Input")
     plt.colorbar()
@@ -265,12 +273,12 @@ for i in range(3):
 plt.show()
 
 plt.figure(figsize=(20, 30))
-for i in range(3):
-    plt.subplot(3, 2, 2 * i + 1)
+for i in range(5):
+    plt.subplot(5, 2, 2 * i + 1)
     plt.imshow(precit_x_tp1_np[i].reshape(48, 2 * 48), cmap="gray")
     plt.title("Prediction")
     plt.colorbar()
-    plt.subplot(3, 2, 2 * i + 2)
+    plt.subplot(5, 2, 2 * i + 2)
     plt.imshow(x_tp1_np[i].reshape(48, 2 * 48), cmap="gray")
     plt.title("Training Input")
     plt.colorbar()

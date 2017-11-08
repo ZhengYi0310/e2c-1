@@ -165,6 +165,59 @@ class PendulumTransition(Transition):
         )
         super(PendulumTransition, self).__init__(trans, dim_z, dim_u)
 
+class BiotacEncoder(nn.Module):
+    def __init__(self, dim_in, dim_out):
+        super(BiotacEncoder, self).__init__()
+        self.dim_out = dim_out
+        self.dim_int = dim_in
+        self.m = nn.ModuleList([
+            torch.nn.Linear(dim_in, 512),
+            # nn.BatchNorm1d(512),
+            nn.ReLU(),
+            # torch.nn.Linear(512, 256),
+            # # nn.BatchNorm1d(256),
+            # nn.ReLU(),
+            nn.Linear(512, 2 * dim_out)
+        ])
+
+    def forward(self, x):
+        for l in self.m:
+            x = l(x)
+        return x.chunk(2, dim=1)
+
+class BiotacTransition(Transition):
+    def __init__(self, dim_z, dim_u):
+        trans = nn.Sequential(
+            nn.Linear(dim_z, 100),
+            nn.BatchNorm1d(100),
+            nn.ReLU(),
+            nn.Linear(100, 100),
+            nn.BatchNorm1d(100),
+            nn.ReLU(),
+            nn.Linear(100, dim_z * 2),
+            # nn.BatchNorm1d(dim_z * 2),
+            nn.Sigmoid() # Added to prevent nan
+        )
+        super(BiotacTransition, self).__init__(trans, dim_z, dim_u)
+
+class BiotacDecoder(nn.Module):
+    def __init__(self, dim_in, dim_out):
+        super(BiotacDecoder, self).__init__()
+        self.dim_in = dim_in
+        self.dim_out = dim_out
+        self.m = nn.ModuleList([
+            torch.nn.Linear(dim_in, 512),
+            # nn.BatchNorm1d(256),
+            # nn.ReLU(),
+            # torch.nn.Linear(256, 512),
+            # nn.BatchNorm1d(512),
+            # nn.ReLU(),
+            nn.Linear(512, 2 * dim_out)
+        ])
+    def forward(self, x):
+        for l in self.m:
+            x = l(x)
+        return x.chunk(2, dim=1)
 
 class LidarEncoder(nn.Module):
     def __init__(self, dim_in, dim_out, ndf=64, nc=1, nz=1024, lf=(3,32), bn=True):
@@ -253,7 +306,8 @@ class LidarDecoder(nn.Module):
 _CONFIG_MAP = {
     'plane': (PlaneEncoder, PlaneTransition, PlaneDecoder),
     'pendulum': (PendulumEncoder, PendulumTransition, PendulumDecoder),
-    'lidar' : (LidarEncoder, PendulumTransition, LidarDecoder)
+    'lidar' : (LidarEncoder, PendulumTransition, LidarDecoder),
+    'biotac': (BiotacEncoder, BiotacTransition, BiotacDecoder)
 }
 
 

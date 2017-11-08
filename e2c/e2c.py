@@ -63,6 +63,7 @@ class E2C(nn.Module):
         self.z_dim = dim_z
         self.decoder = dec(dim_z, dim_in)
         self.trans = trans(dim_z, dim_u)
+        self.config = config
 
     def encode(self, x):
         return self.encoder(x)
@@ -84,25 +85,39 @@ class E2C(nn.Module):
         # return eps.mul(std).add_(mean), NormalDistribution(mean, std, torch.log(std))
         return eps.mul(std).add_(mean), NormalDistribution(mean, std, logvar.mul(0.5))
 
-
     def forward(self, x, action=None, x_next=None, x_t_only=False):
-        if action is None or x_next is None : assert x_t_only
-        
+        if action is None or x_next is None: assert x_t_only
+
         mean, logvar = self.encode(x)
         z, self.Qz = self.reparam(mean, logvar)
-        self.x_dec = self.decode(z)
+        if self.config != 'biotac':
+            self.x_dec = self.decode(z)
+        else:
+            mean_dec, logvar_dec = self.decode(z)
+            self.x_dec = self.reparam(mean_dec, logvar_dec)
 
-        if x_t_only : return
-        
+        if x_t_only: return
+
         mean_next, logvar_next = self.encode(x_next)
         z_next, self.Qz_next = self.reparam(mean_next, logvar_next)
 
         self.z = z
         self.z_next = z_next
         self.x_next_dec = self.decode(z_next)
+        if self.config != 'biotac':
+            self.x_next_dec = self.decode(z_next)
+        else:
+            mean_next_dec, logvar_next_dec = self.decode(z_next)
+            self.x_next_dec = self.reparam(mean_next_dec, logvar_next_dec)
+
 
         self.z_next_pred, self.Qz_next_pred = self.transition(z, self.Qz, action)
         self.x_next_pred_dec = self.decode(self.z_next_pred)
+        if self.config != 'biotac':
+            self.x_next_pred_dec = self.decode(self.z_next_pred)
+        else:
+            mean_next_pred_dec, logvar_next_pred_dec = self.decode(self.z_next_pred)
+            self.x_next_pred_dec = self.reparam(mean_next_pred_dec, logvar_next_pred_dec)
 
         return self.x_next_pred_dec
 
@@ -110,7 +125,10 @@ class E2C(nn.Module):
         return self.encode(x)[0]
 
     def embedding_to_sample(self, z):
-        return self.decode(z)
+        if self.config != 'biotac':
+            return self.decode(z)
+        else:
+            return self.decode(z)[0]
 
     def predict(self, X, U):
         mean, logvar = self.encode(X)
@@ -123,11 +141,9 @@ class E2C(nn.Module):
         return z_next_pred, Qz_next_pred
 
 
-
 def compute_loss(x_dec, x_next_pred_dec, x, x_next,
                  Qz, Qz_next_pred,
                  Qz_next, use_mask=True):
-    
     # # Reconstruction losses
     # mask = (x != 0. ).float()
     # if not use_mask : mask = mask * 0.  + 1.
@@ -147,5 +163,6 @@ def compute_loss(x_dec, x_next_pred_dec, x, x_next,
     kl = KLDGaussian(Qz_next_pred, Qz_next)
     # return bound_loss.mean(), KLD.mean(), kl.mean()
     return x_reconst_loss.mean(), x_next_reconst_loss.mean(), KLD_element, KLD, kl
+
 
 from configs import load_config
